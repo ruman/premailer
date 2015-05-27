@@ -1,0 +1,35 @@
+{
+    "name": "crossjoin/pre-mailer",
+    "description": "Crossjoin\\PreMailer converts CSS in a given HTML source to inline styles and optimizes it for sending it via e-mail. It also creates a text version of the HTML source. Requires PHP 5.4+.",
+    "keywords": ["premailer", "e-mail", "mail", "inline", "css", "styles", "html", "text", "php"],
+    "homepage": "https://github.com/crossjoin/PreMailer",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Christoph Ziegenberg",
+            "email": "ziegenberg@crossjoin.com",
+            "role": "Developer"
+        }
+    ],
+    "support": {
+        "issues": "https://github.com/crossjoin/PreMailer/issues",
+        "source": "https://github.com/crossjoin/PreMailer"
+    },
+    "require": {
+        "php" : ">=5.4.0",
+        "ext-dom" : "*",
+        "ext-mbstring" : "*",
+        "crossjoin/css": "1.0.*@dev",
+        "symfony/css-selector": "3.0.*@dev"
+    },
+    "autoload": {
+        "psr-4": {
+            "Crossjoin\\PreMailer\\": "src/Crossjoin/PreMailer/"
+        }
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "1.0-dev"
+        }
+    }
+}
