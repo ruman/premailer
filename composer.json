@@ -19,17 +19,12 @@
         "php" : ">=5.4.0",
         "ext-dom" : "*",
         "ext-mbstring" : "*",
-        "crossjoin/css": "1.0.*@dev",
+        "crossjoin/css": "1.0.*",
         "symfony/css-selector": "2.7.1"
     },
     "autoload": {
         "psr-4": {
             "Crossjoin\\PreMailer\\": "src/Crossjoin/PreMailer/"
-        }
-    },
-    "extra": {
-        "branch-alias": {
-            "dev-master": "1.0-dev"
         }
     }
 }
