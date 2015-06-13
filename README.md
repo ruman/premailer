@@ -10,7 +10,7 @@ Add the following line to your `composer.json` file:
 ```javascript
 {
     "require": {
-        "crossjoin/pre-mailer": "dev-master"
+        "crossjoin/pre-mailer": "1.0.*"
     }
 }
 ```
