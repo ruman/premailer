@@ -294,6 +294,26 @@ abstract class PreMailerAbstract
         $specificityKeys = array_keys($selectors);
         sort($specificityKeys);
 
+        // Temporary remove all existing style attributes, because they always have the highest priority
+        // and are added again after all styles have been applied to the elements
+        $elements = $xpath->query("descendant-or-self::*[@style]");
+        /** @var \DOMElement $element */
+        foreach ($elements as $element) {
+            if ($element->attributes !== null) {
+                $styleAttribute = $element->attributes->getNamedItem("style");
+
+                $styleValue = "";
+                if ($styleAttribute !== null) {
+                    $styleValue = (string)$styleAttribute->nodeValue;
+                }
+
+                if ($styleValue !== "") {
+                    $element->setAttribute('data-pre-mailer-original-style', $styleValue);
+                    $element->removeAttribute('style');
+                }
+            }
+        }
+
         // Process all style declarations in the correct order
         foreach ($specificityKeys as $specificityKey) {
             /** @var StyleDeclaration[] $declarations */
@@ -318,6 +338,31 @@ abstract class PreMailerAbstract
 
                         $element->setAttribute('style', $styleValue);
                     }
+                }
+            }
+        }
+
+        // Add temporarily removed style attributes again, after all styles have been applied to the elements
+        $elements = $xpath->query("descendant-or-self::*[@data-pre-mailer-original-style]");
+        /** @var \DOMElement $element */
+        foreach ($elements as $element) {
+            if ($element->attributes !== null) {
+                $styleAttribute = $element->attributes->getNamedItem("style");
+                $styleValue = "";
+                if ($styleAttribute !== null) {
+                    $styleValue = (string)$styleAttribute->nodeValue;
+                }
+
+                $originalStyleAttribute = $element->attributes->getNamedItem("data-pre-mailer-original-style");
+                $originalStyleValue = "";
+                if ($originalStyleAttribute !== null) {
+                    $originalStyleValue = (string)$originalStyleAttribute->nodeValue;
+                }
+
+                if ($styleValue !== "" || $originalStyleValue !== "") {
+                    $styleValue = ($styleValue !== "" ? $styleValue . ";" : "") . $originalStyleValue;
+                    $element->setAttribute('style', $styleValue);
+                    $element->removeAttribute('data-pre-mailer-original-style');
                 }
             }
         }
