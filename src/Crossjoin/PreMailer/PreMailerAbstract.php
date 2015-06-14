@@ -630,7 +630,7 @@ abstract class PreMailerAbstract
                     // Only add styles in media rules, if the media rule is valid for "all" and "screen" media types
                     // @note: http://premailer.dialect.ca/ also supports "handheld", but this is really useless
                     $type = $mediaQuery->getType();
-                    if ($type === MediaQuery::TYPE_ALL || MediaQuery::TYPE_SCREEN) {
+                    if ($type === MediaQuery::TYPE_ALL || $type === MediaQuery::TYPE_SCREEN) {
                         // ...and only if there are no additional conditions (like screen width etc.)
                         // which are dynamic and therefore need to be ignored.
                         $conditionCount = count($mediaQuery->getConditions());
