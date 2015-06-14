@@ -231,7 +231,31 @@ abstract class PreMailerAbstract
             $styleNodes[] = $styleNode;
         }
         foreach($styleNodes as $styleNode) {
-            $styleString .= $styleNode->nodeValue . "\r\n";
+            $skip = false;
+
+            // Check if type is 'text/css' (defaults to it if not)
+            $typeAttribute = $styleNode->attributes->getNamedItem("type");
+            if ($typeAttribute !== null && (string)$typeAttribute->nodeValue !== "text/css") {
+                $skip = true;
+            }
+
+            // Check media type is allowed (defaults to 'all')
+            if ($skip === false) {
+                $mediaAttribute = $styleNode->attributes->getNamedItem("media");
+                if ($mediaAttribute !== null) {
+                    $mediaAttribute = str_replace(" ", "", (string)$mediaAttribute->nodeValue);
+                    $mediaTypes = explode(",", $mediaAttribute);
+                    if (!in_array("all", $mediaTypes) && !in_array("screen", $mediaTypes)) {
+                        $skip = true;
+                    }
+                }
+            }
+
+            // Add CSS if allowed
+            if ($skip === false) {
+                $styleString .= $styleNode->nodeValue . "\r\n";
+            }
+
             $styleNode->parentNode->removeChild($styleNode);
         }
 
