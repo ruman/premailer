@@ -8,7 +8,7 @@ use Crossjoin\Css\Format\Rule\Style\StyleDeclaration;
 use Crossjoin\Css\Format\Rule\Style\StyleRuleSet;
 use Crossjoin\Css\Format\Rule\Style\StyleSelector;
 use Crossjoin\Css\Reader\CssString;
-use Crossjoin\Css\Writer\Compact;
+use Crossjoin\Css\Writer\WriterAbstract;
 use Symfony\Component\CssSelector\CssSelector;
 
 abstract class PreMailerAbstract
@@ -28,6 +28,10 @@ abstract class PreMailerAbstract
 
     const OPTION_TEXT_LINE_WIDTH = 'textLineWidth';
 
+    const OPTION_CSS_WRITER_CLASS = 'cssWriterClass';
+    const OPTION_CSS_WRITER_CLASS_COMPACT = '\Crossjoin\Css\Writer\Compact';
+    const OPTION_CSS_WRITER_CLASS_PRETTY = '\Crossjoin\Css\Writer\Pretty';
+
     /**
      * @var array Options for the HTML/text generation
      */
@@ -35,6 +39,7 @@ abstract class PreMailerAbstract
         self::OPTION_STYLE_TAG => self::OPTION_STYLE_TAG_BODY,
         self::OPTION_HTML_CLASSES => self::OPTION_HTML_CLASSES_KEEP,
         self::OPTION_HTML_COMMENTS => self::OPTION_HTML_COMMENTS_REMOVE,
+        self::OPTION_CSS_WRITER_CLASS => self::OPTION_CSS_WRITER_CLASS_COMPACT,
         self::OPTION_TEXT_LINE_WIDTH => 75,
     ];
 
@@ -143,6 +148,19 @@ abstract class PreMailerAbstract
                             );
                         }
                         break;
+                    case self::OPTION_CSS_WRITER_CLASS:
+                        if (is_string($value)) {
+                            if (is_subclass_of($value, '\Crossjoin\Css\Writer\WriterAbstract', true) === false) {
+                                throw new \InvalidArgumentException(
+                                    "Invalid value '$value' for option '$name'. " .
+                                    "The given class has to be a subclass of \\Crossjoin\\Css\\Writer\\WriterAbstract."
+                                );
+                            }
+                        } else {
+                            throw new \InvalidArgumentException(
+                                "Invalid type '" . gettype($value) . "' for value of option '$name'."
+                            );
+                        }
                 }
                 $this->options[$name] = $value;
             } else {
@@ -425,7 +443,9 @@ abstract class PreMailerAbstract
         // Optionally add styles tag to the HEAD or the BODY of the document
         $optionStyleTag = $this->getOption(self::OPTION_STYLE_TAG);
         if ($optionStyleTag === self::OPTION_STYLE_TAG_BODY || $optionStyleTag === self::OPTION_STYLE_TAG_HEAD) {
-            $cssWriter = new Compact($reader->getStyleSheet());
+            $cssWriterClass = $this->getOption(self::OPTION_CSS_WRITER_CLASS);
+            /** @var WriterAbstract $cssWriter */
+            $cssWriter = new $cssWriterClass($reader->getStyleSheet());
             $styleNode = $newDoc->createElement("style");
             $styleNode->nodeValue = $cssWriter->getContent();
 

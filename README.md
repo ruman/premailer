@@ -1,13 +1,13 @@
-#PreMailer
+# PreMailer
 
-##Introduction
+## Introduction
 Crossjoin\PreMailer converts CSS in a given HTML source to inline styles and optimizes it for sending it via e-mail. It also creates a text version of the HTML source.
 
-##Installation
+## Installation
 This is a composer package. See the [composer website](https://getcomposer.org/) for basic installation information.
 
 Add the following line to your `composer.json` file:
-```javascript
+```json
 {
     "require": {
         "crossjoin/pre-mailer": "1.0.*"
@@ -15,7 +15,7 @@ Add the following line to your `composer.json` file:
 }
 ```
 
-##Features
+## Features
 - Extracts CSS from HTML sources
 - Can move CSS to the body of the HTML document (so it won't be removed by some e-mail clients)
 - Can remove comments from the HTML document
@@ -24,9 +24,9 @@ Add the following line to your `composer.json` file:
 - Creates a text version of the HTML document (for the alternative part of the e-mail)
 - ...
 
-##Usage
+## Usage
 
-###Reading HTML
+### Reading HTML
 You can read different HTML sources.
 
 ```php
@@ -39,7 +39,7 @@ $htmlString = "<html>...</html>";
 $preMailer = new \Crossjoin\PreMailer\HtmlString($htmlString);
 ```
 
-###Set charset
+### Set charset
 The default charset is "UTF-8". You can change it to the preferred charset.
 
 ```php
@@ -47,11 +47,10 @@ The default charset is "UTF-8". You can change it to the preferred charset.
 $preMailer->setCharset("ISO-8859-1");
 ```
 
-###Set options
+### Set options
 You can set different options to influence the PreMailer behavior.
 
 ```php
-
 // Remove HTML comments (default)
 $preMailer->setOption($preMailer::OPTION_HTML_COMMENTS, $preMailer::OPTION_HTML_COMMENTS_REMOVE);
 
@@ -76,9 +75,18 @@ $preMailer->setOption($preMailer::OPTION_HTML_CLASSES, $preMailer::OPTION_HTML_C
 
 // Set line-width of the text version (defaults to 75)
 $preMailer->setOption($preMailer::OPTION_TEXT_LINE_WIDTH, 60);
+
+// Set CSS writer class (class that extends \Crossjoin\Css\Writer\WriterAbstract).
+// By default the Compact writer (\Crossjoin\Css\Writer\Compact) is used, but for
+// some purposes another writer (like \Crossjoin\Css\Writer\Pretty) can be useful.
+$preMailer->setOption($preMailer::OPTION_CSS_WRITER_CLASS, $preMailer::OPTION_CSS_WRITER_CLASS_PRETTY);
+// Instead of the constant also the full class name can be used:
+$preMailer->setOption($preMailer::OPTION_CSS_WRITER_CLASS, '\Crossjoin\Css\Writer\Pretty');
+// So you can use your own writer if required:
+$preMailer->setOption($preMailer::OPTION_CSS_WRITER_CLASS, '\MyNameSpace\Css\Writer\MyWriter');
 ```
 
-###Generate the content
+### Generate the content
 The PreMailer generated an optimized HTML and text version for the e-mail.
 
 ```php
@@ -89,7 +97,7 @@ $html = $preMailer->getHtml();
 $text = $preMailer->getText();
 ```
 
-##To Do
+## To Do
 - Add charset auto-detection (extracted from the HTML document)
 - Ability to influence the text version format
 - Optimize inline styles (remove declarations that are overwritten within the same inline style)
