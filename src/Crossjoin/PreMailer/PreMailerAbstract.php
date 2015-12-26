@@ -132,7 +132,7 @@ abstract class PreMailerAbstract
                         break;
                     case self::OPTION_TEXT_LINE_WIDTH:
                         if (is_int($value)) {
-                            if ($value >= 0) {
+                            if ($value <= 0) {
                                 throw new \LengthException(
                                     "Value '" . gettype($value) . "' for option '$name' is to small."
                                 );
