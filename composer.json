@@ -19,8 +19,8 @@
         "php" : ">=5.4.0",
         "ext-dom" : "*",
         "ext-mbstring" : "*",
-        "crossjoin/css": "1.0.*",
-        "symfony/css-selector": "2.7.1"
+        "crossjoin/css": "^1.0.3",
+        "symfony/css-selector": "^2.7.1"
     },
     "autoload": {
         "psr-4": {
