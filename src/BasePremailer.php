@@ -1,5 +1,14 @@
-<?php
-namespace Crossjoin\PreMailer;
+<?php namespace Luminaire\Premailer;
+
+/**
+ * Created by Sublime Text 3
+ *
+ * @user     Kevin Tanjung
+ * @website  http://kevintanjung.github.io
+ * @email    kevin@custombagus.com
+ * @date     02/08/2016
+ * @time     11:05
+ */
 
 use Crossjoin\Css\Format\Rule\AtMedia\MediaQuery;
 use Crossjoin\Css\Format\Rule\AtMedia\MediaRule;
@@ -10,58 +19,75 @@ use Crossjoin\Css\Format\Rule\Style\StyleSelector;
 use Crossjoin\Css\Reader\CssString;
 use Crossjoin\Css\Writer\WriterAbstract;
 use Symfony\Component\CssSelector\CssSelector;
+use DOMDocument;
+use RuntimeException;
+use InvalidArgumentException;
 
-abstract class PreMailerAbstract
+/**
+ * The base Premailer class
+ *
+ * @package  \Luminaire\Premailer
+ */
+abstract class BasePremailer
 {
-    const OPTION_STYLE_TAG = 'styleTag';
-    const OPTION_STYLE_TAG_BODY = 1;
-    const OPTION_STYLE_TAG_HEAD = 2;
+
+    const OPTION_STYLE_TAG        = 'styleTag';
+    const OPTION_STYLE_TAG_BODY   = 1;
+    const OPTION_STYLE_TAG_HEAD   = 2;
     const OPTION_STYLE_TAG_REMOVE = 3;
 
-    const OPTION_HTML_COMMENTS = 'htmlComments';
-    const OPTION_HTML_COMMENTS_KEEP = 1;
+    const OPTION_HTML_COMMENTS        = 'htmlComments';
+    const OPTION_HTML_COMMENTS_KEEP   = 1;
     const OPTION_HTML_COMMENTS_REMOVE = 2;
 
-    const OPTION_HTML_CLASSES = 'htmlClasses';
-    const OPTION_HTML_CLASSES_KEEP = 1;
+    const OPTION_HTML_CLASSES        = 'htmlClasses';
+    const OPTION_HTML_CLASSES_KEEP   = 1;
     const OPTION_HTML_CLASSES_REMOVE = 2;
 
     const OPTION_TEXT_LINE_WIDTH = 'textLineWidth';
 
-    const OPTION_CSS_WRITER_CLASS = 'cssWriterClass';
+    const OPTION_CSS_WRITER_CLASS         = 'cssWriterClass';
     const OPTION_CSS_WRITER_CLASS_COMPACT = '\Crossjoin\Css\Writer\Compact';
-    const OPTION_CSS_WRITER_CLASS_PRETTY = '\Crossjoin\Css\Writer\Pretty';
+    const OPTION_CSS_WRITER_CLASS_PRETTY  = '\Crossjoin\Css\Writer\Pretty';
 
     /**
-     * @var array Options for the HTML/text generation
+     * The options for HTML/text generation
+     *
+     * @var array
      */
     protected $options = [
-        self::OPTION_STYLE_TAG => self::OPTION_STYLE_TAG_BODY,
-        self::OPTION_HTML_CLASSES => self::OPTION_HTML_CLASSES_KEEP,
-        self::OPTION_HTML_COMMENTS => self::OPTION_HTML_COMMENTS_REMOVE,
+        self::OPTION_STYLE_TAG        => self::OPTION_STYLE_TAG_BODY,
+        self::OPTION_HTML_CLASSES     => self::OPTION_HTML_CLASSES_KEEP,
+        self::OPTION_HTML_COMMENTS    => self::OPTION_HTML_COMMENTS_REMOVE,
         self::OPTION_CSS_WRITER_CLASS => self::OPTION_CSS_WRITER_CLASS_COMPACT,
-        self::OPTION_TEXT_LINE_WIDTH => 75,
+        self::OPTION_TEXT_LINE_WIDTH  => 75,
     ];
 
     /**
-     * @var string Charset for the HTML/text output
+     * The charset for HTML/text output
+     *
+     * @var string
      */
     protected $charset = "UTF-8";
 
     /**
-     * @var string Prepared HTML content
+     * The prepared HTML content
+     *
+     * @var string
      */
     protected $html;
 
     /**
-     * @var string Prepared text content
+     * The prepared text content
+     *
+     * @var string
      */
     protected $text;
 
     /**
      * Sets the charset used in the HTML document and used for the output.
      *
-     * @param string $charset
+     * @param  string  $charset
      * @return $this
      */
     public function setCharset($charset)
@@ -174,19 +200,25 @@ abstract class PreMailerAbstract
     /**
      * Gets an option for the generation of the mail.
      *
-     * @param string $name
+     * @param  string  $name
      * @return mixed
      */
     public function getOption($name)
     {
-        if (is_string($name)) {
-            if (isset($this->options[$name])) {
+        if (is_string($name))
+        {
+            if (isset($this->options[$name]))
+            {
                 return $this->options[$name];
-            } else {
-                throw new \InvalidArgumentException("An option with the name '$name' doesn't exist.");
             }
-        } else {
-            throw new \InvalidArgumentException("Invalid type '" . gettype($name) . "' for argument 'name'.");
+            else
+            {
+                throw new InvalidArgumentException("An option with the name '$name' doesn't exist.");
+            }
+        }
+        else
+        {
+            throw new InvalidArgumentException("Invalid type '" . gettype($name) . "' for argument 'name'.");
         }
     }
 
@@ -197,7 +229,8 @@ abstract class PreMailerAbstract
      */
     public function getHtml()
     {
-        if ($this->html === null) {
+        if ($this->html === null)
+        {
             $this->prepareContent();
         }
 
@@ -211,7 +244,8 @@ abstract class PreMailerAbstract
      */
     public function getText()
     {
-        if ($this->text === null) {
+        if ($this->text === null)
+        {
             $this->prepareContent();
         }
 
@@ -227,17 +261,18 @@ abstract class PreMailerAbstract
 
     /**
      * Prepares the mail HTML/text content.
+     *
+     * @return void
      */
     protected function prepareContent()
     {
-        $html = $this->getHtmlContent();
-
-        if (class_exists("\\DOMDocument")) {
-            $doc = new \DOMDocument();
-            $doc->loadHTML($html);
-        } else {
-            throw new \RuntimeException("Required extension 'dom' seems to be missing.");
+        if ( ! class_exists(DOMDocument::class))
+        {
+            throw new RuntimeException("Required extension 'dom' seems to be missing.");
         }
+
+        $doc = new DOMDocument();
+        $doc->loadHTML($html = $this->getHtmlContent());
 
         // Extract styles and remove style tags (optionally added again later).
         //
@@ -667,4 +702,5 @@ abstract class PreMailerAbstract
 
         return $styleRules;
     }
+
 }

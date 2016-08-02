@@ -1,1 +1,6 @@
-.idea/
+/.idea/
+/vendor
+composer.lock
+.DS_Store
+Thumbs.db
+npm-debug.log
