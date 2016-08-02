@@ -24,7 +24,7 @@ class PremailerSpec extends ObjectBehavior
 
     function it_is_initializable()
     {
-        $this->shouldBeAnInstanceOf(BasePremailer::class);
+        $this->shouldBeAnInstanceOf('Luminaire\Premailer\BasePremailer');
         $this->shouldHaveType('Luminaire\Premailer\Stub\Premailer');
     }
 
