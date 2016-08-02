@@ -1,6 +1,6 @@
 {
     "name": "luminaire/premailer",
-    "description": "The \"Luminaire Premailer\" is a fork of the \"Crossjoin PreMsailer\" by Christoph Ziegenberg.",
+    "description": "The \"Luminaire Premailer\" is a fork of the \"Crossjoin PreMailer\" by Christoph Ziegenberg, this fork will make integration to Laravel based project easier.",
     "keywords": ["premailer", "e-mail", "mail", "inline", "css", "styles", "html", "text", "php"],
     "homepage": "https://github.com/luminaire/premailer",
     "license": "MIT",
