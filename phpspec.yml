@@ -1,0 +1,7 @@
+suites:
+  luminaire_premailer_suite:
+    namespace:    Luminaire\Premailer
+    psr4_prefix:  Luminaire\Premailer
+    src_path:     src
+    spec_path:    tests/phpspec
+    spec_prefix:  null

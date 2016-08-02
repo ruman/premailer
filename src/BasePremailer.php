@@ -20,6 +20,7 @@ use Crossjoin\Css\Reader\CssString;
 use Crossjoin\Css\Writer\WriterAbstract;
 use Symfony\Component\CssSelector\CssSelector;
 use DOMDocument;
+use LengthException;
 use RuntimeException;
 use InvalidArgumentException;
 
@@ -31,24 +32,24 @@ use InvalidArgumentException;
 abstract class BasePremailer
 {
 
-    const OPTION_STYLE_TAG        = 'styleTag';
-    const OPTION_STYLE_TAG_BODY   = 1;
-    const OPTION_STYLE_TAG_HEAD   = 2;
-    const OPTION_STYLE_TAG_REMOVE = 3;
+    const OPTION_STYLE_TAG                  = 'styleTag';
+    const OPTION_STYLE_TAG_BODY             = 1;
+    const OPTION_STYLE_TAG_HEAD             = 2;
+    const OPTION_STYLE_TAG_REMOVE           = 3;
 
-    const OPTION_HTML_COMMENTS        = 'htmlComments';
-    const OPTION_HTML_COMMENTS_KEEP   = 1;
-    const OPTION_HTML_COMMENTS_REMOVE = 2;
+    const OPTION_HTML_COMMENTS              = 'htmlComments';
+    const OPTION_HTML_COMMENTS_KEEP         = 1;
+    const OPTION_HTML_COMMENTS_REMOVE       = 2;
 
-    const OPTION_HTML_CLASSES        = 'htmlClasses';
-    const OPTION_HTML_CLASSES_KEEP   = 1;
-    const OPTION_HTML_CLASSES_REMOVE = 2;
+    const OPTION_HTML_CLASSES               = 'htmlClasses';
+    const OPTION_HTML_CLASSES_KEEP          = 1;
+    const OPTION_HTML_CLASSES_REMOVE        = 2;
 
-    const OPTION_TEXT_LINE_WIDTH = 'textLineWidth';
+    const OPTION_TEXT_LINE_WIDTH            = 'textLineWidth';
 
-    const OPTION_CSS_WRITER_CLASS         = 'cssWriterClass';
-    const OPTION_CSS_WRITER_CLASS_COMPACT = '\Crossjoin\Css\Writer\Compact';
-    const OPTION_CSS_WRITER_CLASS_PRETTY  = '\Crossjoin\Css\Writer\Pretty';
+    const OPTION_CSS_WRITER_CLASS           = 'cssWriterClass';
+    const OPTION_CSS_WRITER_CLASS_COMPACT   = '\Crossjoin\Css\Writer\Compact';
+    const OPTION_CSS_WRITER_CLASS_PRETTY    = '\Crossjoin\Css\Writer\Pretty';
 
     /**
      * The options for HTML/text generation
@@ -115,111 +116,133 @@ abstract class BasePremailer
      */
     public function setOption($name, $value)
     {
-        if (is_string($name)) {
-            if (isset($this->options[$name])) {
-                switch ($name) {
-                    case self::OPTION_STYLE_TAG:
-                        if (is_int($value)) {
-                            if (!in_array($value, [
-                                self::OPTION_STYLE_TAG_BODY,
-                                self::OPTION_STYLE_TAG_HEAD,
-                                self::OPTION_STYLE_TAG_REMOVE,
-                            ])) {
-                                throw new \InvalidArgumentException("Invalid value '$value' for option '$name'.");
-                            }
-                        } else {
-                            throw new \InvalidArgumentException(
-                                "Invalid type '" . gettype($value) . "' for value of option '$name'."
-                            );
-                        }
-                        break;
-                    case self::OPTION_HTML_CLASSES:
-                        if (is_int($value)) {
-                            if (!in_array($value, [
-                                self::OPTION_HTML_CLASSES_REMOVE,
-                                self::OPTION_HTML_CLASSES_KEEP,
-                            ])) {
-                                throw new \InvalidArgumentException("Invalid value '$value' for option '$name'.");
-                            }
-                        } else {
-                            throw new \InvalidArgumentException(
-                                "Invalid type '" . gettype($value) . "' for value of option '$name'."
-                            );
-                        }
-                        break;
-                    case self::OPTION_HTML_COMMENTS:
-                        if (is_int($value)) {
-                            if (!in_array($value, [
-                                self::OPTION_HTML_COMMENTS_REMOVE,
-                                self::OPTION_HTML_COMMENTS_KEEP,
-                            ])) {
-                                throw new \InvalidArgumentException("Invalid value '$value' for option '$name'.");
-                            }
-                        } else {
-                            throw new \InvalidArgumentException(
-                                "Invalid type '" . gettype($value) . "' for value of option '$name'."
-                            );
-                        }
-                        break;
-                    case self::OPTION_TEXT_LINE_WIDTH:
-                        if (is_int($value)) {
-                            if ($value <= 0) {
-                                throw new \LengthException(
-                                    "Value '" . gettype($value) . "' for option '$name' is to small."
-                                );
-                            }
-                        } else {
-                            throw new \InvalidArgumentException(
-                                "Invalid type '" . gettype($value) . "' for value of option '$name'."
-                            );
-                        }
-                        break;
-                    case self::OPTION_CSS_WRITER_CLASS:
-                        if (is_string($value)) {
-                            if (is_subclass_of($value, '\Crossjoin\Css\Writer\WriterAbstract', true) === false) {
-                                throw new \InvalidArgumentException(
-                                    "Invalid value '$value' for option '$name'. " .
-                                    "The given class has to be a subclass of \\Crossjoin\\Css\\Writer\\WriterAbstract."
-                                );
-                            }
-                        } else {
-                            throw new \InvalidArgumentException(
-                                "Invalid type '" . gettype($value) . "' for value of option '$name'."
-                            );
-                        }
+        if ( ! is_string($name))
+        {
+            throw new InvalidArgumentException('The argument 0 of [setOption] method is expected to be a [string], but [' . gettype($name) . '] is given.');
+        }
+
+        if ( ! isset($this->options[$name]))
+        {
+            throw new InvalidArgumentException("An option with the name [{$name}] doesn't exist.");
+        }
+
+        $this->validateScalarOptionValue($name, $value);
+        $this->validatePossibleOptionValue($name, $value);
+
+        $this->options[$name] = $value;
+    }
+
+    /**
+     * Validate the scalar value of the passed option
+     *
+     * @param  string      $name
+     * @param  string|int  $value
+     * @return void
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function validateScalarOptionValue($name, $value)
+    {
+        switch ($name)
+        {
+            case self::OPTION_STYLE_TAG:
+            case self::OPTION_HTML_CLASSES:
+            case self::OPTION_HTML_COMMENTS:
+            case self::OPTION_TEXT_LINE_WIDTH:
+                if ( ! is_int($value))
+                {
+                    throw new InvalidArgumentException("The argument 1 of [setOption] method is expected to be a [integer] for option [{name}], but [" . gettype($value) . '] is given.');
                 }
-                $this->options[$name] = $value;
-            } else {
-                throw new \InvalidArgumentException("An option with the name '$name' doesn't exist.");
-            }
-        } else {
-            throw new \InvalidArgumentException("Invalid type '" . gettype($name) . "' for argument 'name'.");
+
+                break;
+
+            case self::OPTION_CSS_WRITER_CLASS:
+                if ( ! is_string($value))
+                {
+                    throw new InvalidArgumentException("The argument 1 of [setOption] method is expected to be a [string] for option [{name}], but [" . gettype($value) . '] is given.');
+                }
+
+                break;
+        }
+    }
+
+    /**
+     * Validate the possible value of the passed option
+     *
+     * @param  string      $name
+     * @param  string|int  $value
+     * @return void
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function validatePossibleOptionValue($name, $value)
+    {
+        switch ($name)
+        {
+            case self::OPTION_STYLE_TAG:
+                if ( ! in_array($value, [self::OPTION_STYLE_TAG_BODY, self::OPTION_STYLE_TAG_HEAD, self::OPTION_STYLE_TAG_REMOVE]))
+                {
+                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
+                }
+                break;
+
+            case self::OPTION_HTML_CLASSES:
+                if ( ! in_array($value, [self::OPTION_HTML_CLASSES_REMOVE, self::OPTION_HTML_CLASSES_KEEP]))
+                {
+                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
+                }
+                break;
+
+            case self::OPTION_HTML_COMMENTS:
+                if ( ! in_array($value, [self::OPTION_HTML_COMMENTS_REMOVE, self::OPTION_HTML_COMMENTS_KEEP]))
+                {
+                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
+                }
+                break;
+
+            case self::OPTION_TEXT_LINE_WIDTH:
+                if ($value <= 0)
+                {
+                    throw new LengthException("Value '" . gettype($value) . "' for option '$name' is to small.");
+                }
+                break;
+
+            case self::OPTION_CSS_WRITER_CLASS:
+                if (is_subclass_of($value, '\Crossjoin\Css\Writer\WriterAbstract', true) === false) {
+                    throw new \InvalidArgumentException(
+                        "Invalid value '$value' for option '$name'. " .
+                        "The given class has to be a subclass of \\Crossjoin\\Css\\Writer\\WriterAbstract."
+                    );
+                }
         }
     }
 
     /**
      * Gets an option for the generation of the mail.
      *
-     * @param  string  $name
+     * @param  string|null  $name
      * @return mixed
+     *
+     * @throws \InvalidArgumentException
      */
-    public function getOption($name)
+    public function getOption($name = null)
     {
-        if (is_string($name))
+        if (is_null($name))
         {
-            if (isset($this->options[$name]))
-            {
-                return $this->options[$name];
-            }
-            else
-            {
-                throw new InvalidArgumentException("An option with the name '$name' doesn't exist.");
-            }
+            return $this->options;
         }
-        else
+
+        if ( ! is_string($name))
         {
-            throw new InvalidArgumentException("Invalid type '" . gettype($name) . "' for argument 'name'.");
+            throw new InvalidArgumentException('The argument 0 of [setOption] method is expected to be a [string], but [' . gettype($name) . '] is given.');
         }
+
+        if ( ! isset($this->options[$name]))
+        {
+            throw new InvalidArgumentException("An option with the name [{$name}] doesn't exist.");
+        }
+
+        return $this->options[$name];
     }
 
     /**

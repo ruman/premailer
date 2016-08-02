@@ -1,6 +1,6 @@
 {
     "name": "luminaire/premailer",
-    "description": "The Luminaire Premailer is a fork of the Crossjoin Premailer by Christoph Ziegenberg.",
+    "description": "The \"Luminaire Premailer\" is a fork of the \"Crossjoin PreMsailer\" by Christoph Ziegenberg.",
     "keywords": ["premailer", "e-mail", "mail", "inline", "css", "styles", "html", "text", "php"],
     "homepage": "https://github.com/luminaire/premailer",
     "license": "MIT",
@@ -20,15 +20,20 @@
         "ext-dom":              "*",
         "ext-mbstring" :        "*",
         "crossjoin/css":        "^1.0.3",
-        "symfony/css-selector": "2.8.*|3.0.*",
+        "symfony/css-selector": "2.8.*|3.0.*"
     },
     "require-dev": {
         "phpunit/phpunit":      "~4.0",
-        "phpspec/phpspec":      "^2.5",
+        "phpspec/phpspec":      "^2.5"
     },
     "autoload": {
         "psr-4": {
             "Luminaire\\Premailer\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Luminaire\\Premailer\\Stub\\": "stubs/"
         }
     }
 }

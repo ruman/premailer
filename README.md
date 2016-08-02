@@ -1,4 +1,4 @@
-# PreMailer
+# Premailer
 
 ## Introduction
 Crossjoin\PreMailer converts CSS in a given HTML source to inline styles and optimizes it for sending it via e-mail. It also creates a text version of the HTML source.
@@ -10,7 +10,7 @@ Add the following line to your `composer.json` file:
 ```json
 {
     "require": {
-        "crossjoin/pre-mailer": "1.0.*"
+        "luminaire/premailer": "1.0.*"
     }
 }
 ```
