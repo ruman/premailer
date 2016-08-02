@@ -133,91 +133,6 @@ abstract class BasePremailer
     }
 
     /**
-     * Validate the scalar value of the passed option
-     *
-     * @param  string      $name
-     * @param  string|int  $value
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function validateScalarOptionValue($name, $value)
-    {
-        switch ($name)
-        {
-            case self::OPTION_STYLE_TAG:
-            case self::OPTION_HTML_CLASSES:
-            case self::OPTION_HTML_COMMENTS:
-            case self::OPTION_TEXT_LINE_WIDTH:
-                if ( ! is_int($value))
-                {
-                    throw new InvalidArgumentException("The argument 1 of [setOption] method is expected to be a [integer] for option [{name}], but [" . gettype($value) . '] is given.');
-                }
-
-                break;
-
-            case self::OPTION_CSS_WRITER_CLASS:
-                if ( ! is_string($value))
-                {
-                    throw new InvalidArgumentException("The argument 1 of [setOption] method is expected to be a [string] for option [{name}], but [" . gettype($value) . '] is given.');
-                }
-
-                break;
-        }
-    }
-
-    /**
-     * Validate the possible value of the passed option
-     *
-     * @param  string      $name
-     * @param  string|int  $value
-     * @return void
-     *
-     * @throws \InvalidArgumentException
-     */
-    protected function validatePossibleOptionValue($name, $value)
-    {
-        switch ($name)
-        {
-            case self::OPTION_STYLE_TAG:
-                if ( ! in_array($value, [self::OPTION_STYLE_TAG_BODY, self::OPTION_STYLE_TAG_HEAD, self::OPTION_STYLE_TAG_REMOVE]))
-                {
-                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
-                }
-                break;
-
-            case self::OPTION_HTML_CLASSES:
-                if ( ! in_array($value, [self::OPTION_HTML_CLASSES_REMOVE, self::OPTION_HTML_CLASSES_KEEP]))
-                {
-                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
-                }
-                break;
-
-            case self::OPTION_HTML_COMMENTS:
-                if ( ! in_array($value, [self::OPTION_HTML_COMMENTS_REMOVE, self::OPTION_HTML_COMMENTS_KEEP]))
-                {
-                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
-                }
-                break;
-
-            case self::OPTION_TEXT_LINE_WIDTH:
-                if ($value <= 0)
-                {
-                    throw new LengthException("Value '" . gettype($value) . "' for option '$name' is to small.");
-                }
-                break;
-
-            case self::OPTION_CSS_WRITER_CLASS:
-                if (is_subclass_of($value, '\Crossjoin\Css\Writer\WriterAbstract', true) === false) {
-                    throw new \InvalidArgumentException(
-                        "Invalid value '$value' for option '$name'. " .
-                        "The given class has to be a subclass of \\Crossjoin\\Css\\Writer\\WriterAbstract."
-                    );
-                }
-        }
-    }
-
-    /**
      * Gets an option for the generation of the mail.
      *
      * @param  string|null  $name
@@ -283,6 +198,24 @@ abstract class BasePremailer
     abstract protected function getHtmlContent();
 
     /**
+     * Get all DOM element that has "style" attribute
+     *
+     * @param  \DOMDocument  $doc
+     * @return array
+     */
+    protected function getElementWithStyleAttribute(DOMDocument $doc)
+    {
+        $nodes = [];
+
+        foreach ($doc->getElementsByTagName('style') as $element)
+        {
+            $nodes[] = $element;
+        }
+
+        return $nodes;
+    }
+
+    /**
      * Prepares the mail HTML/text content.
      *
      * @return void
@@ -302,11 +235,10 @@ abstract class BasePremailer
         // IMPORTANT: The style nodes need to be saved in an array first, or
         //            the replacement won't work correctly.
         $styleString = "";
-        $styleNodes = [];
-        foreach($doc->getElementsByTagName('style') as $styleNode) {
-            $styleNodes[] = $styleNode;
-        }
-        foreach($styleNodes as $styleNode) {
+        $styleNodes  = $this->getElementWithStyleAttribute($doc);
+
+        foreach ($styleNodes as $styleNode)
+        {
             $skip = false;
 
             // Check if type is 'text/css' (defaults to it if not)
@@ -724,6 +656,91 @@ abstract class BasePremailer
         }
 
         return $styleRules;
+    }
+
+    /**
+     * Validate the scalar value of the passed option
+     *
+     * @param  string      $name
+     * @param  string|int  $value
+     * @return void
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function validateScalarOptionValue($name, $value)
+    {
+        switch ($name)
+        {
+            case self::OPTION_STYLE_TAG:
+            case self::OPTION_HTML_CLASSES:
+            case self::OPTION_HTML_COMMENTS:
+            case self::OPTION_TEXT_LINE_WIDTH:
+                if ( ! is_int($value))
+                {
+                    throw new InvalidArgumentException("The argument 1 of [setOption] method is expected to be a [integer] for option [{name}], but [" . gettype($value) . '] is given.');
+                }
+
+                break;
+
+            case self::OPTION_CSS_WRITER_CLASS:
+                if ( ! is_string($value))
+                {
+                    throw new InvalidArgumentException("The argument 1 of [setOption] method is expected to be a [string] for option [{name}], but [" . gettype($value) . '] is given.');
+                }
+
+                break;
+        }
+    }
+
+    /**
+     * Validate the possible value of the passed option
+     *
+     * @param  string      $name
+     * @param  string|int  $value
+     * @return void
+     *
+     * @throws \InvalidArgumentException
+     */
+    protected function validatePossibleOptionValue($name, $value)
+    {
+        switch ($name)
+        {
+            case self::OPTION_STYLE_TAG:
+                if ( ! in_array($value, [self::OPTION_STYLE_TAG_BODY, self::OPTION_STYLE_TAG_HEAD, self::OPTION_STYLE_TAG_REMOVE]))
+                {
+                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
+                }
+                break;
+
+            case self::OPTION_HTML_CLASSES:
+                if ( ! in_array($value, [self::OPTION_HTML_CLASSES_REMOVE, self::OPTION_HTML_CLASSES_KEEP]))
+                {
+                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
+                }
+                break;
+
+            case self::OPTION_HTML_COMMENTS:
+                if ( ! in_array($value, [self::OPTION_HTML_COMMENTS_REMOVE, self::OPTION_HTML_COMMENTS_KEEP]))
+                {
+                    throw new InvalidArgumentException("Invalid value [$value] for option [$name].");
+                }
+                break;
+
+            case self::OPTION_TEXT_LINE_WIDTH:
+                if ($value <= 0)
+                {
+                    throw new LengthException("Value '" . gettype($value) . "' for option '$name' is to small.");
+                }
+                break;
+
+            case self::OPTION_CSS_WRITER_CLASS:
+                if (is_subclass_of($value, '\Crossjoin\Css\Writer\WriterAbstract', true) === false) {
+                    throw new \InvalidArgumentException(
+                        "Invalid value '$value' for option '$name'. " .
+                        "The given class has to be a subclass of \\Crossjoin\\Css\\Writer\\WriterAbstract."
+                    );
+                }
+        }
     }
 
 }
