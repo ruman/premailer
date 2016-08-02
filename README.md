@@ -1,5 +1,10 @@
 # Premailer
 
+[![Build Status](https://img.shields.io/travis/luminaire/premailer/master.svg?style=flat-square)](https://travis-ci.org/luminaire/premailer)
+[![Quality Score](https://img.shields.io/scrutinizer/g/luminaire/premailer.svg?style=flat-square)](https://scrutinizer-ci.com/g/luminaire/premailer)
+[![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE)
+[![Coverage Status](https://img.shields.io/scrutinizer/coverage/g/luminaire/premailer.svg?style=flat-square)](https://scrutinizer-ci.com/g/luminaire/premailer/code-structure)
+
 ## Introduction
 Crossjoin\PreMailer converts CSS in a given HTML source to inline styles and optimizes it for sending it via e-mail. It also creates a text version of the HTML source.
 

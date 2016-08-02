@@ -5,3 +5,16 @@ suites:
     src_path:     src
     spec_path:    tests/phpspec
     spec_prefix:  null
+
+extensions:
+  - PhpSpec\Extension\CodeCoverageExtension
+
+formatter.name: pretty
+
+code_coverage:
+  format:
+    - html
+    - clover
+  output:
+    html: coverage
+    clover: coverage.xml

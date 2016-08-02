@@ -1,5 +1,8 @@
 /.idea/
+/bin
+/coverage
 /vendor
+coverage.xml
 composer.lock
 .DS_Store
 Thumbs.db
