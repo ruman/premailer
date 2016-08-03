@@ -218,97 +218,6 @@ abstract class BasePremailer
     abstract protected function getHtmlContent();
 
     /**
-     * Get all DOM element that has "style" attribute
-     *
-     * @param  \DOMDocument  $doc
-     * @return array
-     */
-    protected function getStyleNodes(DOMDocument $doc)
-    {
-        $nodes = [];
-
-        foreach ($doc->getElementsByTagName('style') as $element)
-        {
-            $nodes[] = $element;
-        }
-
-        return $nodes;
-    }
-
-    /**
-     * Get the HTML <style> tag CSS content
-     *
-     * @param  \DOMElement  $node
-     * @return string|null
-     */
-    protected function getStyleTagContent(DOMElement $node)
-    {
-        if ( ! $this->isStyleTypeAllowed($node) || ! $this->isStyleMediaAllowed($node))
-        {
-            return null;
-        }
-
-        return (string) $node->nodeValue;
-    }
-
-    /**
-     * Check if the HTML <style> tag has no [media] attribute or if it has a
-     * [media] attribute, then it must either have a value of "all" or "screen".
-     *
-     * @param  \DOMElement  $style_node
-     * @return bool
-     */
-    private function isStyleMediaAllowed(DOMElement $style_node)
-    {
-        $media = $style_node->attributes->getNamedItem('media');
-
-        if (is_null($media)) return true;
-
-        $media       = str_replace(' ', '', (string) $media->nodeValue);
-        $media_types = explode(',', $media_types);
-
-        return in_array('all', $media_types) || in_array('screen', $media_types);
-    }
-
-    /**
-     * Check if the HTML <style> tag has the default [type] attribute or the value
-     * of the [type] attribute is set to "text/css".
-     *
-     * @param  \DOMElement  $style_node
-     * @return bool
-     */
-    private function isStyleTypeAllowed(DOMElement $style_node)
-    {
-        $type = $style_node->attributes->getNamedItem('type');
-
-        return is_null($type) || (string) $type->nodeValue == 'text/css';
-    }
-
-    /**
-     * Get all CSS in the mail template
-     *
-     * @param  \DOMDocument  $doc
-     * @return string
-     */
-    protected function getStyleSheet(DOMDocument $doc)
-    {
-        $css = "";
-        $nodes = $this->getStyleNodes($doc);
-
-        foreach ($nodes as $node)
-        {
-            if ($content = $this->getStyleTagContent($node))
-            {
-                $css .= $content . "\r\n";
-            }
-
-            $node->parentNode->removeChild($node);
-        }
-
-        return $css;
-    }
-
-    /**
      * Prepares the mail HTML/text content.
      *
      * @return void
@@ -323,9 +232,12 @@ abstract class BasePremailer
         $doc = new DOMDocument();
         $doc->loadHTML($this->getHtmlContent());
 
-        $xpath  = new DOMXPath($doc);
-        $reader = (new CssString($this->getStyleSheet($doc)))->setEnvironmentEncoding($this->getCharset());
-        $rules  = $reader->getStyleSheet()->getRules();
+        $xpath = new DOMXPath($doc);
+
+        $reader = new CssString((new StyleSheetExtractor($doc))->extract());
+        $reader->setEnvironmentEncoding($this->getCharset());
+
+        $rules = $reader->getStyleSheet()->getRules();
 
         // Extract all relevant style declarations
         $selectors = [];
