@@ -18,11 +18,9 @@ use Crossjoin\Css\Format\Rule\Style\StyleRuleSet;
 use Crossjoin\Css\Format\Rule\Style\StyleSelector;
 use Crossjoin\Css\Reader\CssString;
 use Crossjoin\Css\Writer\WriterAbstract;
-use Symfony\Component\CssSelector\CssSelector;
-use DOMDocument;
-use LengthException;
-use RuntimeException;
-use InvalidArgumentException;
+use Symfony\Component\CssSelector\CssSelectorConverter as CssSelector;
+use DOMDocument, DOMElement, DOMXPath;
+use LengthException, RuntimeException, InvalidArgumentException;
 
 /**
  * The base Premailer class
@@ -62,6 +60,28 @@ abstract class BasePremailer
         self::OPTION_HTML_COMMENTS    => self::OPTION_HTML_COMMENTS_REMOVE,
         self::OPTION_CSS_WRITER_CLASS => self::OPTION_CSS_WRITER_CLASS_COMPACT,
         self::OPTION_TEXT_LINE_WIDTH  => 75,
+    ];
+
+    /**
+     * The pseudo classes that can be set in a style attribute and that are
+     * supported by the Symfony CssSelector (doesn't support CSS4 yet).
+     *
+     * @var array
+     */
+    protected $allowed_pseudo_classes = [
+        StyleSelector::PSEUDO_CLASS_FIRST_CHILD,
+        StyleSelector::PSEUDO_CLASS_ROOT,
+        StyleSelector::PSEUDO_CLASS_NTH_CHILD,
+        StyleSelector::PSEUDO_CLASS_NTH_LAST_CHILD,
+        StyleSelector::PSEUDO_CLASS_NTH_OF_TYPE,
+        StyleSelector::PSEUDO_CLASS_NTH_LAST_OF_TYPE,
+        StyleSelector::PSEUDO_CLASS_LAST_CHILD,
+        StyleSelector::PSEUDO_CLASS_FIRST_OF_TYPE,
+        StyleSelector::PSEUDO_CLASS_LAST_OF_TYPE,
+        StyleSelector::PSEUDO_CLASS_ONLY_CHILD,
+        StyleSelector::PSEUDO_CLASS_ONLY_OF_TYPE,
+        StyleSelector::PSEUDO_CLASS_EMPTY,
+        StyleSelector::PSEUDO_CLASS_NOT,
     ];
 
     /**
@@ -203,7 +223,7 @@ abstract class BasePremailer
      * @param  \DOMDocument  $doc
      * @return array
      */
-    protected function getElementWithStyleAttribute(DOMDocument $doc)
+    protected function getStyleNodes(DOMDocument $doc)
     {
         $nodes = [];
 
@@ -216,90 +236,108 @@ abstract class BasePremailer
     }
 
     /**
+     * Get the HTML <style> tag CSS content
+     *
+     * @param  \DOMElement  $node
+     * @return string|null
+     */
+    protected function getStyleTagContent(DOMElement $node)
+    {
+        if ( ! $this->isStyleTypeAllowed($node) || ! $this->isStyleMediaAllowed($node))
+        {
+            return null;
+        }
+
+        return (string) $node->nodeValue;
+    }
+
+    /**
+     * Check if the HTML <style> tag has no [media] attribute or if it has a
+     * [media] attribute, then it must either have a value of "all" or "screen".
+     *
+     * @param  \DOMElement  $style_node
+     * @return bool
+     */
+    private function isStyleMediaAllowed(DOMElement $style_node)
+    {
+        $media = $style_node->attributes->getNamedItem('media');
+
+        if (is_null($media)) return true;
+
+        $media       = str_replace(' ', '', (string) $media->nodeValue);
+        $media_types = explode(',', $media_types);
+
+        return in_array('all', $media_types) || in_array('screen', $media_types);
+    }
+
+    /**
+     * Check if the HTML <style> tag has the default [type] attribute or the value
+     * of the [type] attribute is set to "text/css".
+     *
+     * @param  \DOMElement  $style_node
+     * @return bool
+     */
+    private function isStyleTypeAllowed(DOMElement $style_node)
+    {
+        $type = $style_node->attributes->getNamedItem('type');
+
+        return is_null($type) || (string) $type->nodeValue == 'text/css';
+    }
+
+    /**
+     * Get all CSS in the mail template
+     *
+     * @param  \DOMDocument  $doc
+     * @return string
+     */
+    protected function getStyleSheet(DOMDocument $doc)
+    {
+        $css = "";
+        $nodes = $this->getStyleNodes($doc);
+
+        foreach ($nodes as $node)
+        {
+            if ($content = $this->getStyleTagContent($node))
+            {
+                $css .= $content . "\r\n";
+            }
+
+            $node->parentNode->removeChild($node);
+        }
+
+        return $css;
+    }
+
+    /**
      * Prepares the mail HTML/text content.
      *
      * @return void
      */
     protected function prepareContent()
     {
-        if ( ! class_exists(DOMDocument::class))
+        if ( ! class_exists('\DOMDocument'))
         {
             throw new RuntimeException("Required extension 'dom' seems to be missing.");
         }
 
         $doc = new DOMDocument();
-        $doc->loadHTML($html = $this->getHtmlContent());
+        $doc->loadHTML($this->getHtmlContent());
 
-        // Extract styles and remove style tags (optionally added again later).
-        //
-        // IMPORTANT: The style nodes need to be saved in an array first, or
-        //            the replacement won't work correctly.
-        $styleString = "";
-        $styleNodes  = $this->getElementWithStyleAttribute($doc);
-
-        foreach ($styleNodes as $styleNode)
-        {
-            $skip = false;
-
-            // Check if type is 'text/css' (defaults to it if not)
-            $typeAttribute = $styleNode->attributes->getNamedItem("type");
-            if ($typeAttribute !== null && (string)$typeAttribute->nodeValue !== "text/css") {
-                $skip = true;
-            }
-
-            // Check media type is allowed (defaults to 'all')
-            if ($skip === false) {
-                $mediaAttribute = $styleNode->attributes->getNamedItem("media");
-                if ($mediaAttribute !== null) {
-                    $mediaAttribute = str_replace(" ", "", (string)$mediaAttribute->nodeValue);
-                    $mediaTypes = explode(",", $mediaAttribute);
-                    if (!in_array("all", $mediaTypes) && !in_array("screen", $mediaTypes)) {
-                        $skip = true;
-                    }
-                }
-            }
-
-            // Add CSS if allowed
-            if ($skip === false) {
-                $styleString .= $styleNode->nodeValue . "\r\n";
-            }
-
-            $styleNode->parentNode->removeChild($styleNode);
-        }
-
-        // Prepare some variables
-        $xpath = new \DOMXpath($doc);
-        $reader = new CssString($styleString);
-        $reader->setEnvironmentEncoding($this->getCharset());
-        $rules = $reader->getStyleSheet()->getRules();
-
-        // Set pseudo classes that can be set in a style attribute
-        // and that are supported by the Symfony CssSelector (doesn't support CSS4 yet).
-        $allowedPseudoClasses = [
-            StyleSelector::PSEUDO_CLASS_FIRST_CHILD,
-            StyleSelector::PSEUDO_CLASS_ROOT,
-            StyleSelector::PSEUDO_CLASS_NTH_CHILD,
-            StyleSelector::PSEUDO_CLASS_NTH_LAST_CHILD,
-            StyleSelector::PSEUDO_CLASS_NTH_OF_TYPE,
-            StyleSelector::PSEUDO_CLASS_NTH_LAST_OF_TYPE,
-            StyleSelector::PSEUDO_CLASS_LAST_CHILD,
-            StyleSelector::PSEUDO_CLASS_FIRST_OF_TYPE,
-            StyleSelector::PSEUDO_CLASS_LAST_OF_TYPE,
-            StyleSelector::PSEUDO_CLASS_ONLY_CHILD,
-            StyleSelector::PSEUDO_CLASS_ONLY_OF_TYPE,
-            StyleSelector::PSEUDO_CLASS_EMPTY,
-            StyleSelector::PSEUDO_CLASS_NOT,
-        ];
+        $xpath  = new DOMXPath($doc);
+        $reader = (new CssString($this->getStyleSheet($doc)))->setEnvironmentEncoding($this->getCharset());
+        $rules  = $reader->getStyleSheet()->getRules();
 
         // Extract all relevant style declarations
         $selectors = [];
-        foreach ($this->getRelevantStyleRules($rules) as $styleRule) {
+
+        foreach ($this->getRelevantStyleRules($rules) as $styleRule)
+        {
             foreach ($styleRule->getSelectors() as $selector) {
                 // Check if the selector contains pseudo classes/elements that cannot
                 // be mapped to elements
                 $skip = false;
                 foreach($selector->getPseudoClasses() as $pseudoClass) {
-                    if (!in_array($pseudoClass, $allowedPseudoClasses)) {
+                    if (!in_array($pseudoClass, $this->allowed_pseudo_classes)) {
                         $skip = true;
                         break;
                     }
@@ -350,7 +388,7 @@ abstract class BasePremailer
         foreach ($specificityKeys as $specificityKey) {
             /** @var StyleDeclaration[] $declarations */
             foreach ($selectors[$specificityKey] as $selectorString => $declarations) {
-                $xpathQuery = CssSelector::toXPath($selectorString);
+                $xpathQuery = (new CssSelector())->toXPath($selectorString);
                 $elements = $xpath->query($xpathQuery);
                 /** @var \DOMElement $element */
                 foreach ($elements as $element) {

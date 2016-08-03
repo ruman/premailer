@@ -104,4 +104,9 @@ class PremailerSpec extends ObjectBehavior
         $this->shouldThrow('\InvalidArgumentException')->duringSetOption('cssWriterClass', 'invalid value');
     }
 
+    function it_get_html_content()
+    {
+        $this->getHtml()->shouldMatch('/<body style="background\-color:black;color:white">/');
+    }
+
 }

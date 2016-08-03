@@ -27,7 +27,7 @@ class Premailer extends BasePremailer
             "</html>",
         ];
 
-        return join("\n", $lines);
+        return join("\r\n", $lines);
     }
 
 }
