@@ -142,7 +142,7 @@ class StyleSheetExtractor
         if (is_null($media)) return true;
 
         $media       = str_replace(' ', '', (string) $media->nodeValue);
-        $media_types = explode(',', $media_types);
+        $media_types = explode(',', $media);
 
         return in_array('all', $media_types) || in_array('screen', $media_types);
     }
