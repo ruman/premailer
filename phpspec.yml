@@ -7,7 +7,7 @@ suites:
     spec_prefix:  null
 
 extensions:
-  # - PhpSpec\Extension\CodeCoverageExtension
+  - PhpSpec\Extension\CodeCoverageExtension
 
 formatter.name: pretty
 
