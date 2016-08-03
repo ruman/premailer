@@ -106,6 +106,13 @@ abstract class BasePremailer
     protected $text;
 
     /**
+     * The loaded DOM Document
+     *
+     * @var \DOMDocument
+     */
+    protected $doc;
+
+    /**
      * Sets the charset used in the HTML document and used for the output.
      *
      * @param  string  $charset
@@ -218,6 +225,24 @@ abstract class BasePremailer
     abstract protected function getHtmlContent();
 
     /**
+     * Load the DOM Document
+     *
+     * @return \DOMDocument
+     */
+    protected function loadDocument()
+    {
+        if ($this->doc)
+        {
+            return $this->doc;
+        }
+
+        $this->doc = new DOMDocument();
+        $this->doc->loadHTML($this->getHtmlContent());
+
+        return $this->doc;
+    }
+
+    /**
      * Prepares the mail HTML/text content.
      *
      * @return void
@@ -229,12 +254,11 @@ abstract class BasePremailer
             throw new RuntimeException("Required extension 'dom' seems to be missing.");
         }
 
-        $doc = new DOMDocument();
-        $doc->loadHTML($this->getHtmlContent());
+        $this->loadDocument();
 
-        $xpath = new DOMXPath($doc);
+        $xpath = new DOMXPath($this->doc);
 
-        $reader = new CssString((new StyleSheetExtractor($doc))->extract());
+        $reader = new CssString((new StyleSheetExtractor($this->doc))->extract());
         $reader->setEnvironmentEncoding($this->getCharset());
 
         $rules = $reader->getStyleSheet()->getRules();
@@ -573,31 +597,43 @@ abstract class BasePremailer
 
     /**
      * Gets all generally relevant style rules.
+     *
      * The selectors/declarations are checked in detail in prepareContent().
      *
-     * @param $rules RuleAbstract[]
+     * @param  RuleAbstract[]  $rules
      * @return StyleRuleSet[]
      */
     protected function getRelevantStyleRules(array $rules)
     {
         $styleRules = [];
 
-        foreach ($rules as $rule) {
-            if ($rule instanceof StyleRuleSet) {
+        foreach ($rules as $rule)
+        {
+            if ($rule instanceof StyleRuleSet)
+            {
                 $styleRules[] = $rule;
-            } else if ($rule instanceof MediaRule) {
-                foreach ($rule->getQueries() as $mediaQuery) {
+            }
+            else if ($rule instanceof MediaRule)
+            {
+                foreach ($rule->getQueries() as $mediaQuery)
+                {
                     // Only add styles in media rules, if the media rule is valid for "all" and "screen" media types
                     // @note: http://premailer.dialect.ca/ also supports "handheld", but this is really useless
                     $type = $mediaQuery->getType();
-                    if ($type === MediaQuery::TYPE_ALL || $type === MediaQuery::TYPE_SCREEN) {
+
+                    if ($type === MediaQuery::TYPE_ALL || $type === MediaQuery::TYPE_SCREEN)
+                    {
                         // ...and only if there are no additional conditions (like screen width etc.)
                         // which are dynamic and therefore need to be ignored.
                         $conditionCount = count($mediaQuery->getConditions());
-                        if ($conditionCount === 0) {
-                            foreach ($this->getRelevantStyleRules($rule->getRules()) as $styleRule) {
+
+                        if ($conditionCount === 0)
+                        {
+                            foreach ($this->getRelevantStyleRules($rule->getRules()) as $styleRule)
+                            {
                                 $styleRules[] = $styleRule;
                             }
+
                             break;
                         }
                     }
