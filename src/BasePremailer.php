@@ -222,6 +222,41 @@ abstract class BasePremailer
     }
 
     /**
+     * Gets all generally relevant style rules.
+     * The selectors/declarations are checked in detail in prepareContent().
+     *
+     * @param $rules RuleAbstract[]
+     * @return StyleRuleSet[]
+     */
+    protected function getRelevantStyleRules(array $rules)
+    {
+        $styleRules = [];
+        foreach ($rules as $rule) {
+            if ($rule instanceof StyleRuleSet) {
+                $styleRules[] = $rule;
+            } else if ($rule instanceof MediaRule) {
+                foreach ($rule->getQueries() as $mediaQuery) {
+                    // Only add styles in media rules, if the media rule is valid for "all" and "screen" media types
+                    // @note: http://premailer.dialect.ca/ also supports "handheld", but this is really useless
+                    $type = $mediaQuery->getType();
+                    if ($type === MediaQuery::TYPE_ALL || $type === MediaQuery::TYPE_SCREEN) {
+                        // ...and only if there are no additional conditions (like screen width etc.)
+                        // which are dynamic and therefore need to be ignored.
+                        $conditionCount = count($mediaQuery->getConditions());
+                        if ($conditionCount === 0) {
+                            foreach ($this->getRelevantStyleRules($rule->getRules()) as $styleRule) {
+                                $styleRules[] = $styleRule;
+                            }
+                            break;
+                        }
+                    }
+                }
+            }
+        }
+        return $styleRules;
+    }
+
+    /**
      * Prepares the mail HTML/text content.
      *
      * @return void

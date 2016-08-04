@@ -17,7 +17,7 @@ use InvalidArgumentException;
  *
  * @package  \Luminaire\Premailer
  */
-class HtmlString extends PreMailerAbstract
+class HtmlString extends BasePremailer
 {
 
     /**

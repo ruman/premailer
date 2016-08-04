@@ -92,13 +92,20 @@ class RelevantSelectorParser
 
         foreach ($relevant as $rule)
         {
-            $this->extractSelector($selectors, $rule);
+            $this->populateSelectors($selectors, $rule);
         }
 
         return $selectors;
     }
 
-    protected function extractSelector(array &$selectors, $rule)
+    /**
+     * Store the selectors from the rule to the tank
+     *
+     * @param  array   &$tank
+     * @param  array   $selectors
+     * @return void
+     */
+    protected function populateSelectors(array &$tank, $rule)
     {
         foreach ($rule->getSelectors() as $selector)
         {
@@ -107,20 +114,46 @@ class RelevantSelectorParser
                 continue;
             }
 
-            $key = $selector->getSpecificity() . '.' . $selector->getValue();
-
-            if (is_null(Arr::get($selectors, $key)))
-            {
-                Arr::set($selectors, $key, []);
-            }
+            $position = $this->prepareSelectorArray(
+                $tank,
+                $selector->getSpecificity(),
+                $selector->getValue()
+            );
 
             foreach ($rule->getDeclarations() as $declaration)
             {
-                $count = count(Arr::get($selectors, $key)) - 1;
-
-                Arr::set($selectors, "{$key}.{$count}", $declaration);
+                $this->storeDeclaration($position, $declaration);
             }
         }
+    }
+
+    protected function storeDeclaration(array &$tank, $declaration)
+    {
+        $tank[] = $declaration;
+    }
+
+    /**
+     * Before building the dictionary of declaration we will need to make sure
+     * there are an empty array.
+     *
+     * @param  array   &$selectors
+     * @param  string  $specifity
+     * @param  string  $name
+     * @return void
+     */
+    protected function prepareSelectorArray(array &$selectors, $specifity, $name)
+    {
+        if ( ! isset($selectors[$specifity]))
+        {
+            $selectors[$specifity] = [];
+        }
+
+        if ( ! isset($selectors[$specifity][$name]))
+        {
+            $selectors[$specifity][$name] = [];
+        }
+
+        return $selectors[$specifity][$name];
     }
 
     /**
@@ -220,7 +253,7 @@ class RelevantSelectorParser
 
             if ($rule instanceof MediaRule)
             {
-                $this->getRelevantMediaRule($style_rules, $rule);
+                $this->getRelevantMediaRule($rule, $style_rules);
             }
         }
 
