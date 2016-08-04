@@ -21,6 +21,7 @@ use Crossjoin\Css\Writer\WriterAbstract;
 use Symfony\Component\CssSelector\CssSelectorConverter as CssSelector;
 use DOMDocument, DOMElement, DOMXPath;
 use LengthException, RuntimeException, InvalidArgumentException;
+use Illuminate\Support\Arr;
 
 /**
  * The base Premailer class
@@ -60,28 +61,6 @@ abstract class BasePremailer
         self::OPTION_HTML_COMMENTS    => self::OPTION_HTML_COMMENTS_REMOVE,
         self::OPTION_CSS_WRITER_CLASS => self::OPTION_CSS_WRITER_CLASS_COMPACT,
         self::OPTION_TEXT_LINE_WIDTH  => 75,
-    ];
-
-    /**
-     * The pseudo classes that can be set in a style attribute and that are
-     * supported by the Symfony CssSelector (doesn't support CSS4 yet).
-     *
-     * @var array
-     */
-    protected $allowed_pseudo_classes = [
-        StyleSelector::PSEUDO_CLASS_FIRST_CHILD,
-        StyleSelector::PSEUDO_CLASS_ROOT,
-        StyleSelector::PSEUDO_CLASS_NTH_CHILD,
-        StyleSelector::PSEUDO_CLASS_NTH_LAST_CHILD,
-        StyleSelector::PSEUDO_CLASS_NTH_OF_TYPE,
-        StyleSelector::PSEUDO_CLASS_NTH_LAST_OF_TYPE,
-        StyleSelector::PSEUDO_CLASS_LAST_CHILD,
-        StyleSelector::PSEUDO_CLASS_FIRST_OF_TYPE,
-        StyleSelector::PSEUDO_CLASS_LAST_OF_TYPE,
-        StyleSelector::PSEUDO_CLASS_ONLY_CHILD,
-        StyleSelector::PSEUDO_CLASS_ONLY_OF_TYPE,
-        StyleSelector::PSEUDO_CLASS_EMPTY,
-        StyleSelector::PSEUDO_CLASS_NOT,
     ];
 
     /**
@@ -256,40 +235,29 @@ abstract class BasePremailer
 
         $this->loadDocument();
 
-        $xpath = new DOMXPath($this->doc);
+        $xpath      = new DOMXPath($this->doc);
+        $stylesheet = (new Parser\StylesheetParser($this->doc))->extract();
 
-        $reader = new CssString((new StyleSheetExtractor($this->doc))->extract());
-        $reader->setEnvironmentEncoding($this->getCharset());
+        $parser     = new Parser\RelevantSelectorParser($stylesheet);
+        $selectors  = $parser->extract();
 
-        $rules = $reader->getStyleSheet()->getRules();
-
-        // Extract all relevant style declarations
-        $selectors = [];
-
-        foreach ($this->getRelevantStyleRules($rules) as $styleRule)
+        foreach ($xpath->query("descendant-or-self::*[@style]") as $element)
         {
-            foreach ($styleRule->getSelectors() as $selector) {
-                // Check if the selector contains pseudo classes/elements that cannot
-                // be mapped to elements
-                $skip = false;
-                foreach($selector->getPseudoClasses() as $pseudoClass) {
-                    if (!in_array($pseudoClass, $this->allowed_pseudo_classes)) {
-                        $skip = true;
-                        break;
-                    }
+            if ($element->attributes !== null)
+            {
+                $styleAttribute = $element->attributes->getNamedItem("style");
+
+                $styleValue = "";
+
+                if ($styleAttribute !== null)
+                {
+                    $styleValue = (string) $styleAttribute->nodeValue;
                 }
-                if ($skip === false) {
-                    $specificity = $selector->getSpecificity();
-                    if (!isset($selectors[$specificity])) {
-                        $selectors[$specificity] = [];
-                    }
-                    $selectorString = $selector->getValue();
-                    if (!isset($selectors[$specificity][$selectorString])) {
-                        $selectors[$specificity][$selectorString] = [];
-                    }
-                    foreach ($styleRule->getDeclarations() as $declaration) {
-                        $selectors[$specificity][$selectorString][] = $declaration;
-                    }
+
+                if ($styleValue !== "")
+                {
+                    $element->setAttribute('data-premailer-original-style', $styleValue);
+                    $element->removeAttribute('style');
                 }
             }
         }
@@ -297,47 +265,35 @@ abstract class BasePremailer
         // Get all specificity values (to process the declarations in the correct order,
         // without sorting the array by key, which perhaps could result in a changed
         // order of selectors within the specificity).
-        $specificityKeys = array_keys($selectors);
-        sort($specificityKeys);
-
-        // Temporary remove all existing style attributes, because they always have the highest priority
-        // and are added again after all styles have been applied to the elements
-        $elements = $xpath->query("descendant-or-self::*[@style]");
-        /** @var \DOMElement $element */
-        foreach ($elements as $element) {
-            if ($element->attributes !== null) {
-                $styleAttribute = $element->attributes->getNamedItem("style");
-
-                $styleValue = "";
-                if ($styleAttribute !== null) {
-                    $styleValue = (string)$styleAttribute->nodeValue;
-                }
-
-                if ($styleValue !== "") {
-                    $element->setAttribute('data-pre-mailer-original-style', $styleValue);
-                    $element->removeAttribute('style');
-                }
-            }
-        }
+        $specificities = array_keys($selectors);
+        sort($specificities);
 
         // Process all style declarations in the correct order
-        foreach ($specificityKeys as $specificityKey) {
+        foreach ($specificities as $specificity)
+        {
             /** @var StyleDeclaration[] $declarations */
-            foreach ($selectors[$specificityKey] as $selectorString => $declarations) {
-                $xpathQuery = (new CssSelector())->toXPath($selectorString);
-                $elements = $xpath->query($xpathQuery);
-                /** @var \DOMElement $element */
-                foreach ($elements as $element) {
-                    if ($element->attributes !== null) {
+            foreach ($selectors[$specificity] as $selector => $declarations)
+            {
+                $xpathQuery = (new CssSelector())->toXPath($selector);
+                $elements   = $xpath->query($xpathQuery);
+
+                foreach ($elements as $element)
+                {
+                    if ($element->attributes !== null)
+                    {
                         $styleAttribute = $element->attributes->getNamedItem("style");
 
                         $styleValue = "";
-                        if ($styleAttribute !== null) {
-                            $styleValue = (string)$styleAttribute->nodeValue;
+
+                        if ($styleAttribute !== null)
+                        {
+                            $styleValue = (string) $styleAttribute->nodeValue;
                         }
 
                         $concat = ($styleValue === "") ? "" : ";";
-                        foreach ($declarations as $declaration) {
+
+                        foreach ($declarations as $declaration)
+                        {
                             $styleValue .= $concat . $declaration->getProperty() . ":" . $declaration->getValue();
                             $concat = ";";
                         }
@@ -409,7 +365,7 @@ abstract class BasePremailer
         if ($optionStyleTag === self::OPTION_STYLE_TAG_BODY || $optionStyleTag === self::OPTION_STYLE_TAG_HEAD) {
             $cssWriterClass = $this->getOption(self::OPTION_CSS_WRITER_CLASS);
             /** @var WriterAbstract $cssWriter */
-            $cssWriter = new $cssWriterClass($reader->getStyleSheet());
+            $cssWriter = new $cssWriterClass($parser->getStylesheetReader()->getStyleSheet());
             $styleNode = $newDoc->createElement("style");
             $styleNode->nodeValue = $cssWriter->getContent();
 
@@ -435,10 +391,10 @@ abstract class BasePremailer
     /**
      * Prepares the mail text content.
      *
-     * @param \DOMDocument $doc
+     * @param  \DOMDocument  $doc
      * @return string
      */
-    protected function prepareText(\DOMDocument $doc)
+    protected function prepareText(DOMDocument $doc)
     {
         $text = $this->convertHtmlToText($doc->childNodes);
         $charset = $this->getCharset();
@@ -593,55 +549,6 @@ abstract class BasePremailer
         $text = preg_replace("/[\r\n]{2,}/", "\n\n", $text);
 
         return $text;
-    }
-
-    /**
-     * Gets all generally relevant style rules.
-     *
-     * The selectors/declarations are checked in detail in prepareContent().
-     *
-     * @param  RuleAbstract[]  $rules
-     * @return StyleRuleSet[]
-     */
-    protected function getRelevantStyleRules(array $rules)
-    {
-        $styleRules = [];
-
-        foreach ($rules as $rule)
-        {
-            if ($rule instanceof StyleRuleSet)
-            {
-                $styleRules[] = $rule;
-            }
-            else if ($rule instanceof MediaRule)
-            {
-                foreach ($rule->getQueries() as $mediaQuery)
-                {
-                    // Only add styles in media rules, if the media rule is valid for "all" and "screen" media types
-                    // @note: http://premailer.dialect.ca/ also supports "handheld", but this is really useless
-                    $type = $mediaQuery->getType();
-
-                    if ($type === MediaQuery::TYPE_ALL || $type === MediaQuery::TYPE_SCREEN)
-                    {
-                        // ...and only if there are no additional conditions (like screen width etc.)
-                        // which are dynamic and therefore need to be ignored.
-                        $conditionCount = count($mediaQuery->getConditions());
-
-                        if ($conditionCount === 0)
-                        {
-                            foreach ($this->getRelevantStyleRules($rule->getRules()) as $styleRule)
-                            {
-                                $styleRules[] = $styleRule;
-                            }
-
-                            break;
-                        }
-                    }
-                }
-            }
-        }
-
-        return $styleRules;
     }
 
     /**

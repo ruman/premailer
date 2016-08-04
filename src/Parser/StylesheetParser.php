@@ -1,4 +1,4 @@
-<?php namespace Luminaire\Premailer;
+<?php namespace Luminaire\Premailer\Parser;
 
 /**
  * Created by Sublime Text 3
@@ -15,11 +15,11 @@ use DOMElement;
 use RuntimeException;
 
 /**
- * The Style Sheet Extractor class
+ * The "CSS Stylesheet Parser" class
  *
- * @package  \Luminaire\Premailer
+ * @package  \Luminaire\Premailer\Parser
  */
-class StyleSheetExtractor
+class StylesheetParser
 {
 
     /**

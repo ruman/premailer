@@ -1,4 +1,4 @@
-<?php namespace Luminaire\Premailer;
+<?php namespace Luminaire\Premailer\Parser;
 
 /**
  * Created by Sublime Text 3
@@ -15,16 +15,16 @@ use Prophecy\Argument;
 use DOMDocument;
 
 /**
- * The "Style Sheet Extractor" specification test
+ * The "Stylesheet Parser" specification test
  *
  * @package  \Luminaire\Premailer
  */
-class StyleSheetExtractorSpec extends ObjectBehavior
+class StylesheetParserSpec extends ObjectBehavior
 {
 
     function it_is_initializable()
     {
-        $this->shouldHaveType('Luminaire\Premailer\StyleSheetExtractor');
+        $this->shouldHaveType('Luminaire\Premailer\Parser\StylesheetParser');
     }
 
     function it_get_and_set_the_document_instance(DOMDocument $doc)
@@ -54,12 +54,22 @@ class StyleSheetExtractorSpec extends ObjectBehavior
         $this->extract()->shouldMatch('/' . join("\r\n", $lines) . '/');
     }
 
-    protected function getHtmlContent()
+    function it_does_not_extract_css_if_the_media_attribute_does_not_have_either_all_or_screen_value()
+    {
+        $doc = new DOMDocument();
+        $doc->loadHTML($this->getHtmlContent('print'));
+
+        $this->beConstructedWith($doc);
+
+        $this->extract()->shouldBe('');
+    }
+
+    protected function getHtmlContent($media = null)
     {
         $lines = [
             '<html>',
             '   <head>',
-            '       <style type="text/css">',
+            '       <style type="text/css"' . ($media ? " media=\"{$media}\"" : '') . '>',
             '           body {',
             '               background-color: black;',
             '               color: white;',
