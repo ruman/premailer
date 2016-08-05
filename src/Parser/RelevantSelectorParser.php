@@ -113,7 +113,7 @@ class RelevantSelectorParser
                 continue;
             }
 
-            $$this->prepareSelectorArray(
+            $this->prepareSelectorArray(
                 $tank,
                 $selector->getSpecificity(),
                 $selector->getValue()
@@ -138,9 +138,9 @@ class RelevantSelectorParser
      * @param  \Crossjoin\Css\Format\Rule\Style\StyleDeclaration  $declaration
      * @return void
      */
-    protected function storeDeclaration(array &$tank, $declaration)
+    protected function storeDeclaration(array &$tank, $declaration, $specifity, $name)
     {
-        $tank[] = $declaration;
+        $tank[$specifity][$name][] = $declaration;
     }
 
     /**
