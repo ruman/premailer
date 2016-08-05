@@ -1,3 +1,4 @@
+
 <?php namespace Luminaire\Premailer\Parser;
 
 /**
@@ -113,7 +114,7 @@ class RelevantSelectorParser
                 continue;
             }
 
-            $position = $this->prepareSelectorArray(
+            $$this->prepareSelectorArray(
                 $tank,
                 $selector->getSpecificity(),
                 $selector->getValue()
@@ -121,7 +122,12 @@ class RelevantSelectorParser
 
             foreach ($rule->getDeclarations() as $declaration)
             {
-                $this->storeDeclaration($position, $declaration);
+                $this->storeDeclaration(
+                    $tank,
+                    $declaration,
+                    $selector->getSpecificity(),
+                    $selector->getValue()
+                );
             }
         }
     }
@@ -140,13 +146,12 @@ class RelevantSelectorParser
 
     /**
      * Before we build the dictionary of style declaration, we will need to make
-     * sure, there is an array to be inserted. Then, we return the pointer to
-     * the array, so it is easy to push a style declaration into the array.
+     * sure, there is an array to be inserted.
      *
      * @param  array   &$selectors
      * @param  string  $specifity
      * @param  string  $name
-     * @return array
+     * @return void
      */
     protected function prepareSelectorArray(array &$selectors, $specifity, $name)
     {
@@ -159,8 +164,6 @@ class RelevantSelectorParser
         {
             $selectors[$specifity][$name] = [];
         }
-
-        return $selectors[$specifity][$name];
     }
 
     /**
