@@ -139,13 +139,14 @@ class RelevantSelectorParser
     }
 
     /**
-     * Before building the dictionary of declaration we will need to make sure
-     * there are an empty array.
+     * Before we build the dictionary of style declaration, we will need to make
+     * sure, there is an array to be inserted. Then, we return the pointer to
+     * the array, so it is easy to push a style declaration into the array.
      *
      * @param  array   &$selectors
      * @param  string  $specifity
      * @param  string  $name
-     * @return &array
+     * @return array
      */
     protected function prepareSelectorArray(array &$selectors, $specifity, $name)
     {
