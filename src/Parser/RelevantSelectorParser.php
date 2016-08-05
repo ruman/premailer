@@ -101,7 +101,7 @@ class RelevantSelectorParser
      * Store the selectors from the rule to the tank
      *
      * @param  array   &$tank
-     * @param  array   $selectors
+     * @param  array   $rule
      * @return void
      */
     protected function populateSelectors(array &$tank, $rule)
@@ -134,8 +134,10 @@ class RelevantSelectorParser
     /**
      * Store the declaration in the selector tank
      *
-     * @param  array
+     * @param  array                                              &$tank
      * @param  \Crossjoin\Css\Format\Rule\Style\StyleDeclaration  $declaration
+     * @param  string                                             $specifity
+     * @param  string                                             $name
      * @return void
      */
     protected function storeDeclaration(array &$tank, $declaration, $specifity, $name)
