@@ -53,7 +53,7 @@ class RelevantSelectorParser
      *
      * @var \Crossjoin\Css\Reader\CssString
      */
-    protected $stylesheet;
+    protected $reader;
 
     /**
      * The charset of the stylesheet
@@ -81,7 +81,6 @@ class RelevantSelectorParser
     /**
      * Get the relevant selectors
      *
-     * @param  \Crossjoin\Css\Reader\CssString  $reader
      * @return array
      */
     public function extract()
@@ -127,6 +126,13 @@ class RelevantSelectorParser
         }
     }
 
+    /**
+     * Store the declaration in the selector tank
+     *
+     * @param  array
+     * @param  \Crossjoin\Css\Format\Rule\Style\StyleDeclaration  $declaration
+     * @return void
+     */
     protected function storeDeclaration(array &$tank, $declaration)
     {
         $tank[] = $declaration;
@@ -139,7 +145,7 @@ class RelevantSelectorParser
      * @param  array   &$selectors
      * @param  string  $specifity
      * @param  string  $name
-     * @return void
+     * @return &array
      */
     protected function prepareSelectorArray(array &$selectors, $specifity, $name)
     {
@@ -237,27 +243,27 @@ class RelevantSelectorParser
     /**
      * Gets all generally relevant style rules
      *
-     * @param  RuleAbstract[]  $rules
-     * @return StyleRuleSet[]
+     * @param  \Crossjoin\Css\Format\Rule\RuleAbstract[]  $rules
+     * @return \Crossjoin\Css\Format\Rule\Style\StyleRuleSet[]
      */
     protected function getRelevantStyleRules(array $rules)
     {
-        $style_rules = [];
+        $relevants = [];
 
         foreach ($rules as $rule)
         {
             if ($rule instanceof StyleRuleSet)
             {
-                $style_rules[] = $rule;
+                $relevants[] = $rule;
             }
 
             if ($rule instanceof MediaRule)
             {
-                $this->getRelevantMediaRule($rule, $style_rules);
+                $this->getRelevantMediaRule($rule, $relevants);
             }
         }
 
-        return $style_rules;
+        return $relevants;
     }
 
     /**
@@ -285,7 +291,13 @@ class RelevantSelectorParser
         }
     }
 
-    protected function isAllowedMediaRule($media_query)
+    /**
+     * Check if the media rule should be included
+     *
+     * @param  \Crossjoin\Css\Format\Rule\AtMedia\MediaQuery  $media_query
+     * @return bool
+     */
+    protected function isAllowedMediaRule(MediaQuery $media_query)
     {
         $type      = $media_query->getType();
         $condition = count($media_query->getConditions());
